@@ -1,0 +1,43 @@
+---
+all:
+  children:
+    servers:
+      children:
+        local:
+          children:
+            ubuntu:
+              children:
+                monitoring:
+                  hosts:
+                    rumble-vm-1.inf.ah34.net:
+                      ansible_host: 192.168.0.21
+                    mon-vm-01.inf.ah34.net:
+                      ansible_host: 192.168.0.22
+                pi:
+                  hosts:
+                    pi1.inf.ah34.net:
+                      ansible_host: 192.168.0.4
+                    pi2.inf.ah34.net:
+                      ansible_host: 192.168.0.5
+                    pi3.inf.ah34.net:
+                      ansible_host: 192.168.0.6
+                    pi4.inf.ah34.net:
+                      ansible_host: 192.168.0.7
+                k3s:
+                  children:
+                    master:
+                      hosts:
+                        k3s-vm-1.inf.ah34.net:
+                          ansible_host: 192.168.0.11
+                        k3s-vm-2.inf.ah34.net:
+                          ansible_host: 192.168.0.12
+                        k3s-vm-3.inf.ah34.net:
+                          ansible_host: 192.168.0.13
+                    node:
+                      hosts:
+                        k3s-vm-4.inf.ah34.net:
+                          ansible_host: 192.168.0.14
+                        k3s-vm-5.inf.ah34.net:
+                          ansible_host: 192.168.0.15
+                        k3s-vm-6.inf.ah34.net:
+                          ansible_host: 192.168.0.16

@@ -1,0 +1,4 @@
+---
+- hosts: [ubuntu]
+  roles:
+  - '../roles/monitoring'

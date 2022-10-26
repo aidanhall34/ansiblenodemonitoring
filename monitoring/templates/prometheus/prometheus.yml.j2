@@ -1,0 +1,78 @@
+global:
+  scrape_interval:     10s
+  external_labels:
+    monitor: 'inf.ah34.net'
+scrape_configs:
+# Node exporter
+  - job_name: 'node_exporter'
+    scheme: https
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['<ip>:<port>',
+      '<ip>:<port>'
+          ]
+    tls_config:
+      insecure_skip_verify: true
+    basic_auth:
+      username: {{ htaccessusr }}
+      password: {{ htaccesspwd }}
+# Docker metrics server
+  - job_name: 'docker_metrics'
+    scheme: https
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['<ip>:<port>',
+      '<ip>:<port>'
+          ]
+    tls_config:
+      insecure_skip_verify: true
+    basic_auth:
+      username: {{ htaccessusr }}
+      password: {{ htaccesspwd }}
+# Cadvisor
+  - job_name: 'cadvisor'
+    scrape_interval: 5s
+    scheme: https
+    static_configs:
+      - targets: ['<ip>:<port>',
+      '<ip>:<port>'
+          ]
+    tls_config:
+      insecure_skip_verify: true
+    basic_auth:
+      username: {{ htaccessusr }}
+      password: {{ htaccesspwd }}
+# Blackbox
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - http://<website>
+    relabel_configs:
+    - source_labels: [__address__]
+      target_label: __param_target
+    - source_labels: [__param_target]
+      target_label: instance
+    - target_label: __address__
+      replacement: blackbox:9115  # The blackbox exporter's real hostname:port.
+# SNMP
+  - job_name: 'snmp'
+    static_configs:
+    - targets: ['<device>']
+      labels:
+        job: '<device name>'
+    - targets: ['<device>']
+      labels:
+        job: '<device name>'
+    metrics_path: /snmp
+    params:
+      module: [mikrotik]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: snmpexporter:9116  # The SNMP exporter's real hostname:port.

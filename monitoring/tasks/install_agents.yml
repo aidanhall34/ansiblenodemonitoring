@@ -1,0 +1,105 @@
+---
+# Install node exporter
+- name: Create a local Service User
+  ansible.builtin.user:
+    name: monitoring
+    shell: /bin/false
+    createhome: false
+- name: Download and unzip Node exporter
+  ansible.builtin.unarchive:
+    src: https://github.com/prometheus/node_exporter/releases/download/v{{node_exporter_version}}/node_exporter-{{node_exporter_version}}.linux-{{ 'armv7' if ansible_architecture == 'aarch64' else 'amd64' }}.tar.gz
+    dest: /var/tmp/
+    remote_src: yes
+- name: Copy files to the install locations
+  copy:
+    src: /var/tmp/node_exporter-{{node_exporter_version}}.linux-{{ 'armv7' if ansible_architecture == 'aarch64' else 'amd64' }}/node_exporter
+    dest: /usr/local/bin
+    remote_src: yes
+    owner: node_exporter
+    group: node_exporter
+    mode: a+x
+- name: Cleaning up the home directory source
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+  - "node_exporter-{{node_exporter_version}}.linux-{{ 'armv7' if ansible_architecture == 'aarch64' else 'amd64' }}/node_exporter"
+  - "node_exporter-{{node_exporter_version}}.linux-{{'armv7' if ansible_architecture == 'aarch64' else 'amd64'}}/node_exporter"
+- name: Copy node_exporter.service file
+  copy:
+    src: node_exporter/node_exporter.service
+    dest: /etc/systemd/system/node_exporter.service
+- name: Restart and enable the node exporter service
+  service:
+    name: node_exporter
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+- name: Download and unzip promtail
+  ansible.builtin.unarchive:
+    src: "https://github.com/grafana/loki/releases/download/v2.6.1/promtail-linux-{{'arm64' if ansible_architecture == 'aarch64' else 'amd64'}}.zip"
+    dest: /var/tmp/
+    remote_src: yes
+- name: Copy files to the install locations
+  copy:
+    src: "/var/tmp/promtail-linux-{{'arm64' if ansible_architecture == 'aarch64' else 'amd64'}}"
+    dest: /usr/local/bin
+    remote_src: yes
+    mode: a+x
+# Allow the promtail user to read the /var/log directory
+- name: Change Log file permissions
+  command:
+    cmd:  "setfacl -R -m u:monitoring:rwX {{ item }}"
+  loop:
+  - "/var/log"
+  - "/var/lib/docker/containers"
+  - "/tmp"
+  become: true
+- name: Copy promtail config file
+  template:
+    src: 'promtail/config-promtail.yml.j2'
+    dest: /usr/local/bin/config-promtail.yml
+- name: Cleaning up the home directory source
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+  - "promtail-linux-{{'arm64' if ansible_architecture == 'aarch64' else 'amd64'}}.zip"
+  - "promtail-linux-{{'arm64' if ansible_architecture == 'aarch64' else 'amd64'}}"
+- name: Copy systemd init file
+  template:
+    src: promtail/promtail.service.j2
+    dest:  /etc/systemd/system/promtail.service
+- name: Restart and enable the promtail service
+  service:
+    name: promtail
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+- name: Deploy docker daemon config
+  template:
+    src: docker/daemon.json
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: '0644'
+- name: Restart docker
+  systemd:
+    name: docker
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+# Can't be run on ARM without a re-compile
+- name: Start cadvisor
+  docker_container:
+    recreate: true
+    image: "gcr.io/cadvisor/cadvisor:latest"
+    name: "cadvisor"
+    volumes:
+    - /:/rootfs:ro
+    - /var/run:/var/run:rw
+    - /sys:/sys:ro
+    - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      name=monitoring
+  when: ansible_architecture != "aarch64"

@@ -1,0 +1,12 @@
+[Unit]
+Description=Promtail service
+After=network.target
+
+[Service]
+User=monitoring
+Group=monitoring
+Type=simple
+ExecStart=/usr/local/bin/promtail-linux-{{'arm64' if ansible_architecture == 'aarch64' else 'amd64'}} -config.file /usr/local/bin/config-promtail.yml
+
+[Install]
+WantedBy=multi-user.target

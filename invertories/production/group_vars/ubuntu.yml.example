@@ -1,0 +1,17 @@
+---
+ansible_become: True
+ansible_user: 
+ansible_password: 
+ansible_become_password: 
+# Node exporter version to install
+node_exporter_version: "1.4.0"
+# URL and Creds for loki
+monitoringserver: "<String>"
+htaccessusr: "<String>"
+htaccesspwd: "<String>"
+snmpsecurity_level:"<String>" 
+snmpusername: "<String>"
+snmppassword: "<String>"
+snmpauth_protocol: "<String>"
+snmppriv_protocol: "<String>"
+snmppriv_password: "<String>"

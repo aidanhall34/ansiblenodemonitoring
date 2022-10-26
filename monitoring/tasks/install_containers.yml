@@ -1,0 +1,115 @@
+---
+################
+# Machine Prep #
+################
+- name: make config directories
+  file:
+    name: "/srv/{{ item }}"
+    state: directory
+    recurse: yes
+    mode: "a+rw"
+  loop:
+    - loki
+    - loki/data
+    - prometheus
+    - prometheus/data
+    - grafana
+    - blackbox
+    - snmp_exporter
+- name: Deploy container config files
+  copy:
+    src: "{{ item }}"
+    dest: "/srv/{{ item }}"
+  loop:
+  - loki/loki-config.yml
+- name: Deploy Prometheus configs
+  template:
+    src: "{{ item }}.j2"
+    dest: "/srv/{{ item }}"
+  loop:
+  - prometheus/prometheus.yml
+  - prometheus/web-config.yml
+  - snmp_exporter/snmp.yml
+
+##############
+# Containers #
+##############
+# Loki
+- name: Deploy Loki
+  docker_container:
+    image: grafana/loki:2.4.0
+    restart_policy: unless-stopped
+    restart: true
+    name: loki-server
+    mounts:
+    - type=bind
+      source=/srv/loki/
+      target=/etc/loki/
+    - type=bind
+      source=/srv/loki/data
+      target=/loki/
+    networks:
+      name=monitoring
+    command: -config.file=/etc/loki/loki-config.yml
+# Blackbox
+- name: Deploy Blackbox
+  docker_container:
+    name: blackbox
+    image: prom/blackbox-exporter:master
+    restart_policy: unless-stopped
+    restart: true
+    recreate: true
+    timeout: 120
+    mounts:
+    - type=bind
+      target=/config
+      source=/srv/blackbox
+    networks:
+      name=monitoring
+# SNMP exporter
+- name: Deploy snmp-exporter
+  docker_container:
+    name: snmpexporter
+    image: quay.io/prometheus/snmp-exporter
+    restart: true
+    recreate: true
+    timeout: 120
+    mounts:
+      type=bind
+      source=/srv/snmp_exporter/
+      target=/etc/snmp_exporter
+    restart_policy: unless-stopped
+    networks:
+      name=monitoring
+# Prometheus
+- name: Deploy Prometheus
+  docker_container:
+    name: prometheus
+    restart_policy: unless-stopped
+    restart: true
+    timeout: 120
+    recreate: true
+    mounts:
+    - type=bind
+      target=/etc/prometheus
+      source=/srv/prometheus
+    - type=bind
+      target=/prometheus
+      source=/srv/prometheus/data
+    image: prom/prometheus
+    command: "--config.file=/etc/prometheus/prometheus.yml"
+    networks:
+      name=monitoring
+# Grafana
+- name: Deploy Grafana
+  docker_container:
+    name: grafana
+    image: grafana/grafana:latest
+    restart: true
+    mounts:
+      type=bind
+      source=/srv/grafana
+      target=/var/lib/grafana
+    restart_policy: unless-stopped
+    networks:
+      name=monitoring

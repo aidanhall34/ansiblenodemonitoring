@@ -1,0 +1,32 @@
+---
+- name: Set timezone to Australia/Sydney
+  community.general.timezone:
+    name: Australia/Sydney
+  tags:
+  - agent
+  - server
+- name: Install required packages
+  import_tasks: install_requirements.yml
+  become: True
+  tags:
+  - agent
+  - server
+- name: Create a docker network
+  docker_network:
+    name: monitoring
+  tags:
+  - agent
+  - server
+- name: Install_containers
+  import_tasks: install_containers.yml
+  tags:
+  - server
+# Install monitoring agents
+- name: Install monitoring agents
+  import_tasks: install_agents.yml
+  tags:
+  - agent
+  - server
+- name: Install nginx reverse proxy
+  import_tasks: install_nginx.yml
+

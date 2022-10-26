@@ -1,0 +1,29 @@
+---
+- name: Install packages
+  apt:
+    name:
+    - docker.io
+    - docker-compose
+    - unzip
+    - acl
+    - python3-pip
+    update_cache: yes
+    state: present
+- name: Copy the requirements file over
+  copy:
+    src: common/requirements.txt
+    dest: /tmp/requirements.txt
+- name: Install the python modules
+  ansible.builtin.pip:
+    requirements: /tmp/requirements.txt
+- name: Clean up the requirements file
+  file: 
+    state: absent
+    path: /tmp/requirements.txt
+- name: Adding user {{ ansible_user }} to docker and wheel group
+  user:
+    name: "{{ ansible_user }}"
+    shell: /bin/bash
+    groups: sudo,docker
+    append: yes
+    state: present

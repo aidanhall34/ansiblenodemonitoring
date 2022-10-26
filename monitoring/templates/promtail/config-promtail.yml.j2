@@ -1,0 +1,27 @@
+server:
+  http_listen_port: 0
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+client:
+  url: https://{{ lokiapi }}/api/prom/push
+  basic_auth:
+    username: {{ htaccessusr }}
+    password: {{ htaccesspwd }}
+  tls_config:
+    insecure_skip_verify: true
+
+scrape_configs:
+# system logs
+- job_name: system
+  static_configs:
+  - labels:
+      job: systemlogs
+      host: {{ inventory_hostname }}
+      __path__: /var/log/*log
+  - labels:
+      job: srvlogs
+      host: {{ inventory_hostname }}
+      __path__: /srv/*/*/*log
